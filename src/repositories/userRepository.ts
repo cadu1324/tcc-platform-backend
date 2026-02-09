@@ -1,33 +1,77 @@
-import { User, CreateUserDTO, UpdateUserDTO } from '../types/user.types';
+import { queryOne, query } from '../config/database';
+import { User, UserResponse, UpdateUserDTO } from '../types/user.types';
 
 export const userRepository = {
-  async findAll(): Promise<User[]> {
-    // TODO: Implementar
-    return [];
+  async findByEmail(email: string): Promise<User | null> {
+    return queryOne<User>(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
   },
 
   async findById(id: string): Promise<User | null> {
-    // TODO: Implementar
-    return null;
+    return queryOne<User>(
+      'SELECT * FROM users WHERE id = $1',
+      [id]
+    );
   },
 
-  async findByEmail(email: string): Promise<User | null> {
-    // TODO: Implementar
-    return null;
+  async create(name: string, email: string, passwordHash: string, userType: string): Promise<UserResponse> {
+    const result = await queryOne<UserResponse>(
+      `INSERT INTO users (name, email, password_hash, user_type)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, email, user_type, is_active, created_at, updated_at`,
+      [name, email, passwordHash, userType]
+    );
+    return result!;
   },
 
-  async create(data: CreateUserDTO): Promise<User> {
-    // TODO: Implementar
-    return {} as User;
+  async findAll(): Promise<UserResponse[]> {
+    return query<UserResponse>(
+      'SELECT id, name, email, user_type, is_active, created_at, updated_at FROM users ORDER BY created_at DESC'
+    );
   },
 
-  async update(id: string, data: UpdateUserDTO): Promise<User | null> {
-    // TODO: Implementar
-    return null;
+  async update(id: string, data: UpdateUserDTO): Promise<UserResponse | null> {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    let paramIndex = 1;
+
+    if (data.name) {
+      fields.push(`name = $${paramIndex++}`);
+      values.push(data.name);
+    }
+    if (data.email) {
+      fields.push(`email = $${paramIndex++}`);
+      values.push(data.email);
+    }
+    if (data.password) {
+      fields.push(`password_hash = $${paramIndex++}`);
+      values.push(data.password);
+    }
+    if (data.user_type) {
+      fields.push(`user_type = $${paramIndex++}`);
+      values.push(data.user_type);
+    }
+
+    if (fields.length === 0) return null;
+
+    fields.push(`updated_at = NOW()`);
+    values.push(id);
+
+    return queryOne<UserResponse>(
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex}
+       RETURNING id, name, email, user_type, is_active, created_at, updated_at`,
+      values
+    );
   },
 
-  async delete(id: string): Promise<boolean> {
-    // TODO: Implementar
-    return false;
+  async deactivate(id: string): Promise<boolean> {
+    const result = await queryOne<UserResponse>(
+      `UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1
+       RETURNING id`,
+      [id]
+    );
+    return !!result;
   }
 };

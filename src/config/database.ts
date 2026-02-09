@@ -14,3 +14,13 @@ export async function queryOne<T>(text: string, params?: unknown[]): Promise<T |
   const result = await pool.query(text, params);
   return (result.rows[0] as T) || null;
 }
+
+export async function testConnection(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('SELECT 1');
+    console.log('Database connected successfully');
+  } finally {
+    client.release();
+  }
+}

@@ -4,16 +4,18 @@ import { UserType } from '../types/user.types';
 
 export interface TokenPayload {
   id: string;
-  email: string;
-  type: UserType;
+  user_type: UserType;
 }
 
 export function generateToken(payload: TokenPayload): string {
-  // TODO: Implementar
-  return '';
+  return jwt.sign(payload, env.jwtSecret, { expiresIn: '24h' });
 }
 
 export function verifyToken(token: string): TokenPayload | null {
-  // TODO: Implementar
-  return null;
+  try {
+    const decoded = jwt.verify(token, env.jwtSecret) as TokenPayload;
+    return decoded;
+  } catch {
+    return null;
+  }
 }

@@ -14,10 +14,11 @@ export function errorHandler(
   error: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
   if (error instanceof AppError) {
     res.status(error.statusCode).json({
+      success: false,
       error: error.message
     });
     return;
@@ -26,6 +27,7 @@ export function errorHandler(
   console.error(error);
 
   res.status(500).json({
+    success: false,
     error: 'Internal server error'
   });
 }

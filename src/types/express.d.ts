@@ -5,8 +5,7 @@ declare global {
     interface Request {
       user?: {
         id: string;
-        email: string;
-        type: UserType;
+        user_type: UserType;
       };
     }
   }
