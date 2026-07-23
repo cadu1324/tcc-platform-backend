@@ -5,7 +5,7 @@ export enum UserType {
 }
 
 export interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
   password_hash: string;
@@ -30,7 +30,7 @@ export interface UpdateUserDTO {
 }
 
 export interface UserResponse {
-  id: string;
+  id: number;
   name: string;
   email: string;
   user_type: UserType;

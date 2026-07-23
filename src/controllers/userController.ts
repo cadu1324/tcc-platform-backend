@@ -13,7 +13,7 @@ export const userController = {
 
   async findById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const user = await userService.findById(req.params.id);
+      const user = await userService.findById(Number(req.params.id));
       res.status(200).json({ success: true, data: user });
     } catch (error) {
       next(error);
@@ -34,7 +34,7 @@ export const userController = {
     try {
       const { name, email, password, user_type } = req.body;
       const requesterId = req.user!.id;
-      const user = await userService.update(req.params.id, { name, email, password, user_type }, requesterId);
+      const user = await userService.update(Number(req.params.id), { name, email, password, user_type }, requesterId);
       res.status(200).json({ success: true, data: user });
     } catch (error) {
       next(error);
@@ -43,7 +43,7 @@ export const userController = {
 
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await userService.delete(req.params.id);
+      await userService.delete(Number(req.params.id));
       res.status(200).json({ success: true, data: { message: 'User deactivated successfully' } });
     } catch (error) {
       next(error);

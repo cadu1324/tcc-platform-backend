@@ -1,42 +1,79 @@
-import { Project, CreateProjectDTO, UpdateProjectDTO, ProjectStatus } from '../types/project.types';
-
-// Regra de negócio: Student can only have one project with status in_progress at a time
+import { Project, CreateProjectDTO, UpdateProjectDTO } from '../types/project.types';
+import { projectRepository } from '../repositories/projectRepository';
+import { userRepository } from '../repositories/userRepository';
+import { AppError } from '../middlewares/errorHandler';
 
 export const projectService = {
   async findAll(): Promise<Project[]> {
-    // TODO: Implementar
-    return [];
+    return projectRepository.findAll();
   },
 
-  async findById(id: string): Promise<Project | null> {
-    // TODO: Implementar
-    return null;
+  async findById(id: number): Promise<Project> {
+    const project = await projectRepository.findById(id);
+    if (!project) {
+      throw new AppError('Project not found', 404);
+    }
+    return project;
   },
 
-  async findByStudentId(studentId: string): Promise<Project[]> {
-    // TODO: Implementar
-    return [];
+  async findByStudentId(studentId: number): Promise<Project[]> {
+    return projectRepository.findByStudentId(studentId);
   },
 
-  async findByAdvisorId(advisorId: string): Promise<Project[]> {
-    // TODO: Implementar
-    return [];
+  async findByAdvisorId(advisorId: number): Promise<Project[]> {
+    return projectRepository.findByAdvisorId(advisorId);
   },
 
   async create(data: CreateProjectDTO): Promise<Project> {
-    // TODO: Implementar
-    // Verificar regra: aluno não pode ter outro projeto in_progress
-    return {} as Project;
+    if (!data.title || !data.description || !data.student_id) {
+      throw new AppError('Title, description and student id are required');
+    }
+
+    const student = await userRepository.findById(data.student_id);
+    if (!student) {
+      throw new AppError('Student not found', 404);
+    }
+
+    if (data.advisor_id) {
+      const advisor = await userRepository.findById(data.advisor_id);
+      if (!advisor) {
+        throw new AppError('Advisor not found', 404);
+      }
+    }
+
+    return projectRepository.create(data);
   },
 
-  async update(id: string, data: UpdateProjectDTO): Promise<Project | null> {
-    // TODO: Implementar
-    // Se mudando status para in_progress, verificar regra
-    return null;
+  async update(id: number, data: UpdateProjectDTO): Promise<Project> {
+    const existing = await projectRepository.findById(id);
+    if (!existing) {
+      throw new AppError('Project not found', 404);
+    }
+
+    if (data.advisor_id) {
+      const advisor = await userRepository.findById(data.advisor_id);
+      if (!advisor) {
+        throw new AppError('Advisor not found', 404);
+      }
+    }
+
+    const updated = await projectRepository.update(id, data);
+    if (!updated) {
+      throw new AppError('No fields to update');
+    }
+
+    return updated;
   },
 
-  async delete(id: string): Promise<boolean> {
-    // TODO: Implementar
-    return false;
+  async delete(id: number): Promise<void> {
+    const existing = await projectRepository.findById(id);
+    if (!existing) {
+      throw new AppError('Project not found', 404);
+    }
+
+    const deleted = await projectRepository.delete(id);
+    if (!deleted) {
+      throw new AppError('Failed to delete project');
+    }
   }
 };

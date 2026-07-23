@@ -1,33 +1,65 @@
 import { Delivery, CreateDeliveryDTO, UpdateDeliveryDTO } from '../types/project.types';
+import { deliveryRepository } from '../repositories/deliveryRepository';
+import { projectRepository } from '../repositories/projectRepository';
+import { AppError } from '../middlewares/errorHandler';
 
 export const deliveryService = {
   async findAll(): Promise<Delivery[]> {
-    // TODO: Implementar
-    return [];
+    return deliveryRepository.findAll();
   },
 
-  async findById(id: string): Promise<Delivery | null> {
-    // TODO: Implementar
-    return null;
+  async findById(id: number): Promise<Delivery> {
+    const delivery = await deliveryRepository.findById(id);
+    if (!delivery) {
+      throw new AppError('Delivery not found', 404);
+    }
+    return delivery;
   },
 
-  async findByProjectId(projectId: string): Promise<Delivery[]> {
-    // TODO: Implementar
-    return [];
+  async findByProjectId(projectId: number): Promise<Delivery[]> {
+    const project = await projectRepository.findById(projectId);
+    if (!project) {
+      throw new AppError('Project not found', 404);
+    }
+    return deliveryRepository.findByProjectId(projectId);
   },
 
   async create(data: CreateDeliveryDTO): Promise<Delivery> {
-    // TODO: Implementar
-    return {} as Delivery;
+    if (!data.project_id || !data.title || !data.description) {
+      throw new AppError('Project id, title and description are required');
+    }
+
+    const project = await projectRepository.findById(data.project_id);
+    if (!project) {
+      throw new AppError('Project not found', 404);
+    }
+
+    return deliveryRepository.create(data);
   },
 
-  async update(id: string, data: UpdateDeliveryDTO): Promise<Delivery | null> {
-    // TODO: Implementar
-    return null;
+  async update(id: number, data: UpdateDeliveryDTO): Promise<Delivery> {
+    const existing = await deliveryRepository.findById(id);
+    if (!existing) {
+      throw new AppError('Delivery not found', 404);
+    }
+
+    const updated = await deliveryRepository.update(id, data);
+    if (!updated) {
+      throw new AppError('No fields to update');
+    }
+
+    return updated;
   },
 
-  async delete(id: string): Promise<boolean> {
-    // TODO: Implementar
-    return false;
+  async delete(id: number): Promise<void> {
+    const existing = await deliveryRepository.findById(id);
+    if (!existing) {
+      throw new AppError('Delivery not found', 404);
+    }
+
+    const deleted = await deliveryRepository.delete(id);
+    if (!deleted) {
+      throw new AppError('Failed to delete delivery');
+    }
   }
 };

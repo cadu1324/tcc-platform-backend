@@ -9,7 +9,7 @@ export const userRepository = {
     );
   },
 
-  async findById(id: string): Promise<User | null> {
+  async findById(id: number): Promise<User | null> {
     return queryOne<User>(
       'SELECT * FROM users WHERE id = $1',
       [id]
@@ -32,7 +32,7 @@ export const userRepository = {
     );
   },
 
-  async update(id: string, data: UpdateUserDTO): Promise<UserResponse | null> {
+  async update(id: number, data: UpdateUserDTO): Promise<UserResponse | null> {
     const fields: string[] = [];
     const values: unknown[] = [];
     let paramIndex = 1;
@@ -66,7 +66,7 @@ export const userRepository = {
     );
   },
 
-  async deactivate(id: string): Promise<boolean> {
+  async deactivate(id: number): Promise<boolean> {
     const result = await queryOne<UserResponse>(
       `UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1
        RETURNING id`,

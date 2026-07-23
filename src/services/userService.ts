@@ -8,7 +8,7 @@ export const userService = {
     return userRepository.findAll();
   },
 
-  async findById(id: string): Promise<UserResponse> {
+  async findById(id: number): Promise<UserResponse> {
     const user = await userRepository.findById(id);
     if (!user) {
       throw new AppError('User not found', 404);
@@ -36,7 +36,7 @@ export const userService = {
     return userRepository.create(data.name, data.email, passwordHash, data.user_type);
   },
 
-  async update(id: string, data: UpdateUserDTO, requesterId: string): Promise<UserResponse> {
+  async update(id: number, data: UpdateUserDTO, requesterId: number): Promise<UserResponse> {
     const user = await userRepository.findById(id);
     if (!user) {
       throw new AppError('User not found', 404);
@@ -82,7 +82,7 @@ export const userService = {
     return updated;
   },
 
-  async delete(id: string): Promise<void> {
+  async delete(id: number): Promise<void> {
     const user = await userRepository.findById(id);
     if (!user) {
       throw new AppError('User not found', 404);

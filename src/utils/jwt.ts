@@ -3,7 +3,7 @@ import { env } from '../config/env';
 import { UserType } from '../types/user.types';
 
 export interface TokenPayload {
-  id: string;
+  id: number;
   user_type: UserType;
 }
 
