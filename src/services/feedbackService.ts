@@ -2,6 +2,8 @@ import { Feedback, CreateFeedbackDTO } from '../types/feedback.types';
 import { feedbackRepository } from '../repositories/feedbackRepository';
 import { deliveryRepository } from '../repositories/deliveryRepository';
 import { projectRepository } from '../repositories/projectRepository';
+import { notificationService } from './notificationService';
+import { NotificationType } from '../types/notification.types';
 import { AppError } from '../middlewares/errorHandler';
 
 export const feedbackService = {
@@ -36,6 +38,15 @@ export const feedbackService = {
       throw new AppError('Only the project advisor can give feedback on this delivery', 403);
     }
 
-    return feedbackRepository.create(data);
+    const feedback = await feedbackRepository.create(data);
+
+    await notificationService.create({
+      user_id: project.student_id,
+      type: NotificationType.FEEDBACK_REGISTERED,
+      message: `New feedback was registered on delivery "${delivery.title}"`,
+      project_id: project.id
+    });
+
+    return feedback;
   }
 };

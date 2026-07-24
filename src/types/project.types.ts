@@ -21,7 +21,7 @@ export interface CreateProjectDTO {
   title: string;
   description: string;
   student_id: number;
-  advisor_id?: number;
+  advisor_id: number;
   start_date?: Date;
   expected_delivery_date?: Date;
 }

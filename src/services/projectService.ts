@@ -1,4 +1,4 @@
-import { Project, CreateProjectDTO, UpdateProjectDTO } from '../types/project.types';
+import { Project, CreateProjectDTO, UpdateProjectDTO, ProjectStatus } from '../types/project.types';
 import { projectRepository } from '../repositories/projectRepository';
 import { userRepository } from '../repositories/userRepository';
 import { AppError } from '../middlewares/errorHandler';
@@ -25,8 +25,8 @@ export const projectService = {
   },
 
   async create(data: CreateProjectDTO): Promise<Project> {
-    if (!data.title || !data.description || !data.student_id) {
-      throw new AppError('Title, description and student id are required');
+    if (!data.title || !data.description || !data.student_id || !data.advisor_id) {
+      throw new AppError('Title, description, student id and advisor id are required');
     }
 
     const student = await userRepository.findById(data.student_id);
@@ -34,11 +34,17 @@ export const projectService = {
       throw new AppError('Student not found', 404);
     }
 
-    if (data.advisor_id) {
-      const advisor = await userRepository.findById(data.advisor_id);
-      if (!advisor) {
-        throw new AppError('Advisor not found', 404);
-      }
+    const advisor = await userRepository.findById(data.advisor_id);
+    if (!advisor) {
+      throw new AppError('Advisor not found', 404);
+    }
+
+    const activeProject = await projectRepository.findByStudentIdAndStatus(
+      data.student_id,
+      ProjectStatus.IN_PROGRESS
+    );
+    if (activeProject) {
+      throw new AppError('Student already has a project in progress');
     }
 
     return projectRepository.create(data);
@@ -54,6 +60,16 @@ export const projectService = {
       const advisor = await userRepository.findById(data.advisor_id);
       if (!advisor) {
         throw new AppError('Advisor not found', 404);
+      }
+    }
+
+    if (data.status === ProjectStatus.IN_PROGRESS && existing.status !== ProjectStatus.IN_PROGRESS) {
+      const activeProject = await projectRepository.findByStudentIdAndStatus(
+        existing.student_id,
+        ProjectStatus.IN_PROGRESS
+      );
+      if (activeProject) {
+        throw new AppError('Student already has a project in progress');
       }
     }
 

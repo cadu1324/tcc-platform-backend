@@ -1,6 +1,8 @@
 import { Delivery, CreateDeliveryDTO, UpdateDeliveryDTO } from '../types/project.types';
 import { deliveryRepository } from '../repositories/deliveryRepository';
 import { projectRepository } from '../repositories/projectRepository';
+import { notificationService } from './notificationService';
+import { NotificationType } from '../types/notification.types';
 import { AppError } from '../middlewares/errorHandler';
 
 export const deliveryService = {
@@ -34,7 +36,18 @@ export const deliveryService = {
       throw new AppError('Project not found', 404);
     }
 
-    return deliveryRepository.create(data);
+    const delivery = await deliveryRepository.create(data);
+
+    if (project.advisor_id) {
+      await notificationService.create({
+        user_id: project.advisor_id,
+        type: NotificationType.DELIVERY_CREATED,
+        message: `New delivery "${delivery.title}" was submitted for project "${project.title}"`,
+        project_id: project.id
+      });
+    }
+
+    return delivery;
   },
 
   async update(id: number, data: UpdateDeliveryDTO): Promise<Delivery> {
