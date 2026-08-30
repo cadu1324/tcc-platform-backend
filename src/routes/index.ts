@@ -7,6 +7,7 @@ import milestoneRoutes from './milestoneRoutes';
 import feedbackRoutes from './feedbackRoutes';
 import notificationRoutes from './notificationRoutes';
 import dashboardRoutes from './dashboardRoutes';
+import messageRoutes from './messageRoutes';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/milestones', milestoneRoutes);
 router.use('/feedbacks', feedbackRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/messages', messageRoutes);
 
 export default router;

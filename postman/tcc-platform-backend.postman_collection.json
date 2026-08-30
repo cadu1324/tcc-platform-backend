@@ -20,7 +20,8 @@
     { "key": "project_id", "value": "", "type": "string" },
     { "key": "delivery_id", "value": "", "type": "string" },
     { "key": "milestone_id", "value": "", "type": "string" },
-    { "key": "notification_id", "value": "", "type": "string" }
+    { "key": "notification_id", "value": "", "type": "string" },
+    { "key": "message_contact_id", "value": "", "type": "string" }
   ],
   "item": [
     {
@@ -855,6 +856,93 @@
                 "exec": [
                   "pm.test('Status code is 200', function () {",
                   "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "List Contacts (Advisor)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{advisor_token}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/messages/contacts", "host": ["{{baseUrl}}"], "path": ["messages", "contacts"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data.length > 0) {",
+                  "    pm.collectionVariables.set('message_contact_id', json.data[0].user_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Get Conversation (Advisor)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{advisor_token}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/messages/{{message_contact_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["messages", "{{message_contact_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Send Message (Advisor)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{advisor_token}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipient_id\": {{message_contact_id}},\n  \"content\": \"Olá, tudo bem com o andamento do TCC?\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
                   "});"
                 ]
               }
