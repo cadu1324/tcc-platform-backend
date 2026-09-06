@@ -1,5 +1,8 @@
 import { Message, CreateMessageDTO, MessageContact, MessageContactRow } from '../types/message.types';
 import { messageRepository } from '../repositories/messageRepository';
+import { userRepository } from '../repositories/userRepository';
+import { notificationService } from './notificationService';
+import { NotificationType } from '../types/notification.types';
 import { AppError } from '../middlewares/errorHandler';
 import { UserType } from '../types/user.types';
 
@@ -25,6 +28,25 @@ async function assertValidContact(userId: number, otherUserId: number): Promise<
   }
 }
 
+// Best-effort: the message is already persisted, so a notification failure must not
+// fail the request. One unread MESSAGE_RECEIVED at a time keeps the bell from flooding
+// during an active conversation.
+async function notifyRecipient(senderId: number, recipientId: number): Promise<void> {
+  try {
+    if (await notificationService.hasUnread(recipientId, NotificationType.MESSAGE_RECEIVED)) {
+      return;
+    }
+    const sender = await userRepository.findById(senderId);
+    await notificationService.create({
+      user_id: recipientId,
+      type: NotificationType.MESSAGE_RECEIVED,
+      message: `New message from ${sender?.name ?? 'a contact'}`
+    });
+  } catch (error) {
+    console.error('Failed to create message notification', error);
+  }
+}
+
 export const messageService = {
   async findContacts(userId: number, userType: UserType): Promise<MessageContact[]> {
     const rows = await contactFinders[userType](userId);
@@ -42,6 +64,8 @@ export const messageService = {
       throw new AppError('Cannot send a message to yourself');
     }
     await assertValidContact(data.sender_id, data.recipient_id);
-    return messageRepository.create(data);
+    const message = await messageRepository.create(data);
+    await notifyRecipient(data.sender_id, data.recipient_id);
+    return message;
   }
 };

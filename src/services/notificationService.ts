@@ -1,4 +1,4 @@
-import { Notification, CreateNotificationDTO } from '../types/notification.types';
+import { Notification, CreateNotificationDTO, NotificationType } from '../types/notification.types';
 import { notificationRepository } from '../repositories/notificationRepository';
 import { AppError } from '../middlewares/errorHandler';
 
@@ -9,6 +9,10 @@ export const notificationService = {
 
   async create(data: CreateNotificationDTO): Promise<Notification> {
     return notificationRepository.create(data);
+  },
+
+  async hasUnread(userId: number, type: NotificationType): Promise<boolean> {
+    return notificationRepository.hasUnreadOfType(userId, type);
   },
 
   async markAsRead(id: number, userId: number): Promise<Notification> {

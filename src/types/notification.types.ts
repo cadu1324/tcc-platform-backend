@@ -2,7 +2,8 @@ export enum NotificationType {
   DELIVERY_CREATED = 'delivery_created',
   FEEDBACK_REGISTERED = 'feedback_registered',
   MILESTONE_CREATED = 'milestone_created',
-  MILESTONE_UPDATED = 'milestone_updated'
+  MILESTONE_UPDATED = 'milestone_updated',
+  MESSAGE_RECEIVED = 'message_received'
 }
 
 export interface Notification {

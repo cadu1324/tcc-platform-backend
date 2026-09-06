@@ -1,5 +1,5 @@
 import { query, queryOne } from '../config/database';
-import { Notification, CreateNotificationDTO } from '../types/notification.types';
+import { Notification, CreateNotificationDTO, NotificationType } from '../types/notification.types';
 
 export const notificationRepository = {
   async findByUserId(userId: number): Promise<Notification[]> {
@@ -38,5 +38,16 @@ export const notificationRepository = {
       [userId]
     );
     return result!.count;
+  },
+
+  async hasUnreadOfType(userId: number, type: NotificationType): Promise<boolean> {
+    const result = await queryOne<{ has_unread: boolean }>(
+      `SELECT EXISTS(
+         SELECT 1 FROM notifications
+         WHERE user_id = $1 AND type = $2 AND is_read = FALSE
+       ) AS has_unread`,
+      [userId, type]
+    );
+    return result!.has_unread;
   }
 };
