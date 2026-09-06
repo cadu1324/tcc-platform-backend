@@ -17,6 +17,12 @@ export interface Project {
   updated_at: Date;
 }
 
+export interface AdvisorProject extends Project {
+  student_name: string;
+  milestones_total: number;
+  milestones_completed: number;
+}
+
 export interface CreateProjectDTO {
   title: string;
   description: string;
@@ -49,6 +55,7 @@ export interface Delivery {
   deadline: Date | null;
   status: DeliveryStatus;
   file_url: string | null;
+  file_name: string | null;
   submitted_at: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -67,5 +74,6 @@ export interface UpdateDeliveryDTO {
   deadline?: Date;
   status?: DeliveryStatus;
   file_url?: string;
+  file_name?: string;
   submitted_at?: Date;
 }

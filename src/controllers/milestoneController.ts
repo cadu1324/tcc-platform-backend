@@ -32,7 +32,10 @@ export const milestoneController = {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { project_id, title, description, due_date } = req.body;
-      const milestone = await milestoneService.create({ project_id, title, description, due_date });
+      const milestone = await milestoneService.create(
+        { project_id, title, description, due_date },
+        req.user!
+      );
       res.status(201).json({ success: true, data: milestone });
     } catch (error) {
       next(error);
@@ -42,12 +45,11 @@ export const milestoneController = {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { title, description, due_date, status } = req.body;
-      const milestone = await milestoneService.update(Number(req.params.id), {
-        title,
-        description,
-        due_date,
-        status
-      });
+      const milestone = await milestoneService.update(
+        Number(req.params.id),
+        { title, description, due_date, status },
+        req.user!
+      );
       res.status(200).json({ success: true, data: milestone });
     } catch (error) {
       next(error);
@@ -56,7 +58,7 @@ export const milestoneController = {
 
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await milestoneService.delete(Number(req.params.id));
+      await milestoneService.delete(Number(req.params.id), req.user!);
       res.status(200).json({ success: true, data: { message: 'Milestone deleted successfully' } });
     } catch (error) {
       next(error);

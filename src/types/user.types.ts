@@ -27,6 +27,7 @@ export interface UpdateUserDTO {
   email?: string;
   password?: string;
   user_type?: UserType;
+  is_active?: boolean;
 }
 
 export interface UserResponse {
@@ -37,4 +38,11 @@ export interface UserResponse {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
+}
+
+export type AdvisorOption = Pick<User, 'id' | 'name'>;
+
+export interface Requester {
+  id: number;
+  user_type: UserType;
 }

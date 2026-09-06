@@ -1,4 +1,4 @@
-import { CreateUserDTO, UpdateUserDTO, UserResponse } from '../types/user.types';
+import { CreateUserDTO, UpdateUserDTO, UserResponse, AdvisorOption } from '../types/user.types';
 import { userRepository } from '../repositories/userRepository';
 import { hashPassword } from '../utils/hashPassword';
 import { AppError } from '../middlewares/errorHandler';
@@ -6,6 +6,10 @@ import { AppError } from '../middlewares/errorHandler';
 export const userService = {
   async findAll(): Promise<UserResponse[]> {
     return userRepository.findAll();
+  },
+
+  async findAdvisors(): Promise<AdvisorOption[]> {
+    return userRepository.findAdvisors();
   },
 
   async findById(id: number): Promise<UserResponse> {
@@ -58,6 +62,10 @@ export const userService = {
     // Não pode mudar user_type do próprio usuário
     if (isSelf && data.user_type) {
       throw new AppError('You cannot change your own user type', 403);
+    }
+
+    if (data.is_active !== undefined && !isAdmin) {
+      throw new AppError('Only an admin can change a user active status', 403);
     }
 
     if (data.email) {

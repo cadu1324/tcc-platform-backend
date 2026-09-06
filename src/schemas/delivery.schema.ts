@@ -14,5 +14,6 @@ export const updateDeliverySchema = z.object({
   deadline: z.coerce.date().optional(),
   status: z.nativeEnum(DeliveryStatus).optional(),
   file_url: z.string().min(1).optional(),
+  file_name: z.string().min(1).optional(),
   submitted_at: z.coerce.date().optional()
 });

@@ -20,5 +20,27 @@ export const authController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await authService.forgotPassword({ email: req.body.email });
+      res.status(200).json({
+        success: true,
+        data: { message: 'If an account exists for that email, reset instructions have been sent' }
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { token, password } = req.body;
+      await authService.resetPassword({ token, password });
+      res.status(200).json({ success: true, data: { message: 'Password updated successfully' } });
+    } catch (error) {
+      next(error);
+    }
   }
 };

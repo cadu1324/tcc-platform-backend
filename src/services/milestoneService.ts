@@ -1,9 +1,14 @@
 import { Milestone, CreateMilestoneDTO, UpdateMilestoneDTO } from '../types/milestone.types';
 import { Project } from '../types/project.types';
+import type { Requester } from '../types/user.types';
 import { milestoneRepository } from '../repositories/milestoneRepository';
 import { projectRepository } from '../repositories/projectRepository';
 import { notificationService } from './notificationService';
 import { NotificationType } from '../types/notification.types';
+import {
+  assertCanManageMilestone,
+  assertCanUpdateMilestoneStatus
+} from '../utils/milestoneAccess';
 import { AppError } from '../middlewares/errorHandler';
 
 async function notifyMilestoneChange(
@@ -48,7 +53,7 @@ export const milestoneService = {
     return milestoneRepository.findByProjectId(projectId);
   },
 
-  async create(data: CreateMilestoneDTO): Promise<Milestone> {
+  async create(data: CreateMilestoneDTO, requester: Requester): Promise<Milestone> {
     if (!data.project_id || !data.title) {
       throw new AppError('Project id and title are required');
     }
@@ -57,6 +62,8 @@ export const milestoneService = {
     if (!project) {
       throw new AppError('Project not found', 404);
     }
+
+    assertCanManageMilestone(project, requester);
 
     const milestone = await milestoneRepository.create(data);
 
@@ -69,10 +76,23 @@ export const milestoneService = {
     return milestone;
   },
 
-  async update(id: number, data: UpdateMilestoneDTO): Promise<Milestone> {
+  async update(id: number, data: UpdateMilestoneDTO, requester: Requester): Promise<Milestone> {
     const existing = await milestoneRepository.findById(id);
     if (!existing) {
       throw new AppError('Milestone not found', 404);
+    }
+
+    const project = await projectRepository.findById(existing.project_id);
+    if (!project) {
+      throw new AppError('Project not found', 404);
+    }
+
+    const changesContent =
+      data.title !== undefined || data.description !== undefined || data.due_date !== undefined;
+    if (changesContent) {
+      assertCanManageMilestone(project, requester);
+    } else {
+      assertCanUpdateMilestoneStatus(project, requester);
     }
 
     const updated = await milestoneRepository.update(id, data);
@@ -80,23 +100,27 @@ export const milestoneService = {
       throw new AppError('No fields to update');
     }
 
-    const project = await projectRepository.findById(updated.project_id);
-    if (project) {
-      await notifyMilestoneChange(
-        project,
-        NotificationType.MILESTONE_UPDATED,
-        `Milestone "${updated.title}" was updated`
-      );
-    }
+    await notifyMilestoneChange(
+      project,
+      NotificationType.MILESTONE_UPDATED,
+      `Milestone "${updated.title}" was updated`
+    );
 
     return updated;
   },
 
-  async delete(id: number): Promise<void> {
+  async delete(id: number, requester: Requester): Promise<void> {
     const existing = await milestoneRepository.findById(id);
     if (!existing) {
       throw new AppError('Milestone not found', 404);
     }
+
+    const project = await projectRepository.findById(existing.project_id);
+    if (!project) {
+      throw new AppError('Project not found', 404);
+    }
+
+    assertCanManageMilestone(project, requester);
 
     const deleted = await milestoneRepository.delete(id);
     if (!deleted) {

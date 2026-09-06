@@ -10,6 +10,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', requireRole(UserType.ADMIN), userController.findAll);
+router.get('/advisors', userController.findAdvisors);
 router.get('/:id', userController.findById);
 router.post('/', requireRole(UserType.ADMIN), validateRequest(createUserSchema), userController.create);
 router.put('/:id', validateRequest(updateUserSchema), userController.update);

@@ -52,6 +52,10 @@ export const deliveryRepository = {
       fields.push(`file_url = $${paramIndex++}`);
       values.push(data.file_url);
     }
+    if (data.file_name !== undefined) {
+      fields.push(`file_name = $${paramIndex++}`);
+      values.push(data.file_name);
+    }
     if (data.submitted_at !== undefined) {
       fields.push(`submitted_at = $${paramIndex++}`);
       values.push(data.submitted_at);

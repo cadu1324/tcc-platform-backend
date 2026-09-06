@@ -1,5 +1,5 @@
 import { queryOne, query } from '../config/database';
-import { User, UserResponse, UpdateUserDTO } from '../types/user.types';
+import { User, UserResponse, UpdateUserDTO, AdvisorOption, UserType } from '../types/user.types';
 
 export const userRepository = {
   async findByEmail(email: string): Promise<User | null> {
@@ -32,6 +32,15 @@ export const userRepository = {
     );
   },
 
+  async findAdvisors(): Promise<AdvisorOption[]> {
+    return query<AdvisorOption>(
+      `SELECT id, name FROM users
+       WHERE user_type = $1 AND is_active = true
+       ORDER BY name`,
+      [UserType.ADVISOR]
+    );
+  },
+
   async update(id: number, data: UpdateUserDTO): Promise<UserResponse | null> {
     const fields: string[] = [];
     const values: unknown[] = [];
@@ -53,6 +62,10 @@ export const userRepository = {
       fields.push(`user_type = $${paramIndex++}`);
       values.push(data.user_type);
     }
+    if (data.is_active !== undefined) {
+      fields.push(`is_active = $${paramIndex++}`);
+      values.push(data.is_active);
+    }
 
     if (fields.length === 0) return null;
 
@@ -63,6 +76,13 @@ export const userRepository = {
       `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex}
        RETURNING id, name, email, user_type, is_active, created_at, updated_at`,
       values
+    );
+  },
+
+  async updatePassword(id: number, passwordHash: string): Promise<void> {
+    await query(
+      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+      [passwordHash, id]
     );
   },
 

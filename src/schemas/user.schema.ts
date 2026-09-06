@@ -12,5 +12,6 @@ export const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().email('Invalid email').optional(),
   password: z.string().min(6, 'Password must be at least 6 characters').optional(),
-  user_type: z.nativeEnum(UserType).optional()
+  user_type: z.nativeEnum(UserType).optional(),
+  is_active: z.boolean().optional()
 });

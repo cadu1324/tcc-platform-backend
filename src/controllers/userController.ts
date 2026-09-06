@@ -11,6 +11,15 @@ export const userController = {
     }
   },
 
+  async findAdvisors(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const advisors = await userService.findAdvisors();
+      res.status(200).json({ success: true, data: advisors });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async findById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = await userService.findById(Number(req.params.id));
@@ -32,9 +41,13 @@ export const userController = {
 
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { name, email, password, user_type } = req.body;
+      const { name, email, password, user_type, is_active } = req.body;
       const requesterId = req.user!.id;
-      const user = await userService.update(Number(req.params.id), { name, email, password, user_type }, requesterId);
+      const user = await userService.update(
+        Number(req.params.id),
+        { name, email, password, user_type, is_active },
+        requesterId
+      );
       res.status(200).json({ success: true, data: user });
     } catch (error) {
       next(error);

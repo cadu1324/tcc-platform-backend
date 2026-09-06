@@ -1,5 +1,11 @@
 import { query, queryOne } from '../config/database';
-import { Project, CreateProjectDTO, UpdateProjectDTO, ProjectStatus } from '../types/project.types';
+import {
+  Project,
+  AdvisorProject,
+  CreateProjectDTO,
+  UpdateProjectDTO,
+  ProjectStatus
+} from '../types/project.types';
 
 export const projectRepository = {
   async findAll(): Promise<Project[]> {
@@ -20,6 +26,22 @@ export const projectRepository = {
   async findByAdvisorId(advisorId: number): Promise<Project[]> {
     return query<Project>(
       'SELECT * FROM projects WHERE advisor_id = $1 ORDER BY created_at DESC',
+      [advisorId]
+    );
+  },
+
+  async findByAdvisorIdWithStats(advisorId: number): Promise<AdvisorProject[]> {
+    return query<AdvisorProject>(
+      `SELECT p.*,
+              u.name AS student_name,
+              COUNT(m.id)::int AS milestones_total,
+              (COUNT(m.id) FILTER (WHERE m.status = 'completed'))::int AS milestones_completed
+       FROM projects p
+       JOIN users u ON u.id = p.student_id
+       LEFT JOIN milestones m ON m.project_id = p.id
+       WHERE p.advisor_id = $1
+       GROUP BY p.id, u.name
+       ORDER BY p.created_at DESC`,
       [advisorId]
     );
   },
