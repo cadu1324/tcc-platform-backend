@@ -1,96 +1,91 @@
-import { query, queryOne } from '../config/database';
+import { Prisma } from '../generated/prisma/client';
+import { prisma } from '../config/prisma';
 import {
   Milestone,
   MilestoneWithProject,
   CreateMilestoneDTO,
-  UpdateMilestoneDTO
+  UpdateMilestoneDTO,
+  MilestoneStatus
 } from '../types/milestone.types';
+
+/** Prisma's generated milestone_status_enum has the same string values as MilestoneStatus, but is a distinct nominal type. */
+function asMilestone<T>(row: T): T & { status: MilestoneStatus } {
+  return row as T & { status: MilestoneStatus };
+}
 
 export const milestoneRepository = {
   async findAll(): Promise<Milestone[]> {
-    return query<Milestone>('SELECT * FROM milestones ORDER BY due_date ASC');
+    const rows = await prisma.milestones.findMany({ orderBy: { due_date: 'asc' } });
+    return rows.map(asMilestone);
   },
 
   // US14: marcos pendentes vencendo nos proximos 7 dias (due_soon) ou ja
   // vencidos (overdue). O job de notificacao decide o tipo comparando
-  // due_date com a data atual.
+  // due_date com a data atual. Mantido como SQL raw pela condicao de data
+  // em OR, que fica mais direta assim do que no query builder.
   async findDueSoonOrOverdue(): Promise<MilestoneWithProject[]> {
-    return query<MilestoneWithProject>(
-      `SELECT m.*,
-              p.student_id AS student_id,
-              p.advisor_id AS advisor_id,
-              p.title AS project_title
-       FROM milestones m
-       JOIN projects p ON p.id = m.project_id
-       WHERE m.status = 'pending'
-         AND (
-           (m.due_date >= CURRENT_DATE AND m.due_date < CURRENT_DATE + INTERVAL '7 days')
-           OR m.due_date < CURRENT_DATE
-         )
-       ORDER BY m.due_date ASC`
-    );
+    return prisma.$queryRaw<MilestoneWithProject[]>`
+      SELECT m.*,
+             p.student_id AS student_id,
+             p.advisor_id AS advisor_id,
+             p.title AS project_title
+      FROM milestones m
+      JOIN projects p ON p.id = m.project_id
+      WHERE m.status = 'pending'
+        AND (
+          (m.due_date >= CURRENT_DATE AND m.due_date < CURRENT_DATE + INTERVAL '7 days')
+          OR m.due_date < CURRENT_DATE
+        )
+      ORDER BY m.due_date ASC
+    `;
   },
 
   async findById(id: number): Promise<Milestone | null> {
-    return queryOne<Milestone>('SELECT * FROM milestones WHERE id = $1', [id]);
+    const row = await prisma.milestones.findUnique({ where: { id } });
+    return row && asMilestone(row);
   },
 
   async findByProjectId(projectId: number): Promise<Milestone[]> {
-    return query<Milestone>(
-      'SELECT * FROM milestones WHERE project_id = $1 ORDER BY due_date ASC',
-      [projectId]
-    );
+    const rows = await prisma.milestones.findMany({
+      where: { project_id: projectId },
+      orderBy: { due_date: 'asc' }
+    });
+    return rows.map(asMilestone);
   },
 
   async create(data: CreateMilestoneDTO): Promise<Milestone> {
-    const result = await queryOne<Milestone>(
-      `INSERT INTO milestones (project_id, title, description, due_date)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [data.project_id, data.title, data.description ?? null, data.due_date ?? null]
-    );
-    return result!;
+    const row = await prisma.milestones.create({
+      data: {
+        project_id: data.project_id,
+        title: data.title,
+        description: data.description ?? null,
+        due_date: data.due_date ?? null
+      }
+    });
+    return asMilestone(row);
   },
 
   async update(id: number, data: UpdateMilestoneDTO): Promise<Milestone | null> {
-    const fields: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
+    const updateData: Prisma.milestonesUpdateInput = {};
 
-    if (data.title !== undefined) {
-      fields.push(`title = $${paramIndex++}`);
-      values.push(data.title);
-    }
-    if (data.description !== undefined) {
-      fields.push(`description = $${paramIndex++}`);
-      values.push(data.description);
-    }
-    if (data.due_date !== undefined) {
-      fields.push(`due_date = $${paramIndex++}`);
-      values.push(data.due_date);
-    }
-    if (data.status !== undefined) {
-      fields.push(`status = $${paramIndex++}`);
-      values.push(data.status);
-    }
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.due_date !== undefined) updateData.due_date = data.due_date;
+    if (data.status !== undefined) updateData.status = data.status;
 
-    if (fields.length === 0) return null;
+    if (Object.keys(updateData).length === 0) return null;
 
-    fields.push(`updated_at = NOW()`);
-    values.push(id);
-
-    return queryOne<Milestone>(
-      `UPDATE milestones SET ${fields.join(', ')} WHERE id = $${paramIndex}
-       RETURNING *`,
-      values
-    );
+    const row = await prisma.milestones.update({ where: { id }, data: updateData });
+    return asMilestone(row);
   },
 
   async delete(id: number): Promise<boolean> {
-    const result = await queryOne<{ id: number }>(
-      'DELETE FROM milestones WHERE id = $1 RETURNING id',
-      [id]
-    );
-    return !!result;
+    try {
+      await prisma.milestones.delete({ where: { id } });
+      return true;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') return false;
+      throw error;
+    }
   }
 };
