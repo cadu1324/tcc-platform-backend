@@ -1,5 +1,8 @@
 import { Notification, CreateNotificationDTO, NotificationType } from '../types/notification.types';
 import { notificationRepository } from '../repositories/notificationRepository';
+import { notificationSettingsService } from './notificationSettingsService';
+import { userRepository } from '../repositories/userRepository';
+import { sendMail } from '../utils/sendMail';
 import { AppError } from '../middlewares/errorHandler';
 
 export const notificationService = {
@@ -8,7 +11,28 @@ export const notificationService = {
   },
 
   async create(data: CreateNotificationDTO): Promise<Notification> {
-    return notificationRepository.create(data);
+    const notification = await notificationRepository.create(data);
+
+    // Best-effort: a copia por e-mail nunca pode derrubar a operacao que
+    // gerou a notificacao (feedback, entrega, mensagem...), que ja foi
+    // persistida acima. Falha de SMTP ou settings vira log, nao erro 500.
+    try {
+      const settings = await notificationSettingsService.get();
+      if (settings.email_copy_enabled) {
+        const recipient = await userRepository.findById(data.user_id);
+        if (recipient) {
+          await sendMail({
+            to: recipient.email,
+            subject: 'New notification',
+            text: notification.message
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to send notification email copy:', error);
+    }
+
+    return notification;
   },
 
   async hasUnread(userId: number, type: NotificationType): Promise<boolean> {

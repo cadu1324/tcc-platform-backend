@@ -1,9 +1,34 @@
 import { query, queryOne } from '../config/database';
-import { Milestone, CreateMilestoneDTO, UpdateMilestoneDTO } from '../types/milestone.types';
+import {
+  Milestone,
+  MilestoneWithProject,
+  CreateMilestoneDTO,
+  UpdateMilestoneDTO
+} from '../types/milestone.types';
 
 export const milestoneRepository = {
   async findAll(): Promise<Milestone[]> {
     return query<Milestone>('SELECT * FROM milestones ORDER BY due_date ASC');
+  },
+
+  // US14: marcos pendentes vencendo nos proximos 7 dias (due_soon) ou ja
+  // vencidos (overdue). O job de notificacao decide o tipo comparando
+  // due_date com a data atual.
+  async findDueSoonOrOverdue(): Promise<MilestoneWithProject[]> {
+    return query<MilestoneWithProject>(
+      `SELECT m.*,
+              p.student_id AS student_id,
+              p.advisor_id AS advisor_id,
+              p.title AS project_title
+       FROM milestones m
+       JOIN projects p ON p.id = m.project_id
+       WHERE m.status = 'pending'
+         AND (
+           (m.due_date >= CURRENT_DATE AND m.due_date < CURRENT_DATE + INTERVAL '7 days')
+           OR m.due_date < CURRENT_DATE
+         )
+       ORDER BY m.due_date ASC`
+    );
   },
 
   async findById(id: number): Promise<Milestone | null> {

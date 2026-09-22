@@ -3,7 +3,9 @@ export enum NotificationType {
   FEEDBACK_REGISTERED = 'feedback_registered',
   MILESTONE_CREATED = 'milestone_created',
   MILESTONE_UPDATED = 'milestone_updated',
-  MESSAGE_RECEIVED = 'message_received'
+  MESSAGE_RECEIVED = 'message_received',
+  MILESTONE_DUE_SOON = 'milestone_due_soon',
+  MILESTONE_OVERDUE = 'milestone_overdue'
 }
 
 export interface Notification {

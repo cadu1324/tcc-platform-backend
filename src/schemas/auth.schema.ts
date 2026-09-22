@@ -21,3 +21,7 @@ export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Token is required'),
   password: z.string().min(6, 'Password must be at least 6 characters')
 });
+
+export const refreshTokenSchema = z.object({
+  refresh_token: z.string().min(1, 'Refresh token is required')
+});

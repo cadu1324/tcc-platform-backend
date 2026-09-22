@@ -42,5 +42,23 @@ export const authController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await authService.refresh({ refresh_token: req.body.refresh_token });
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await authService.logout({ refresh_token: req.body.refresh_token });
+      res.status(200).json({ success: true, data: { message: 'Logged out successfully' } });
+    } catch (error) {
+      next(error);
+    }
   }
 };

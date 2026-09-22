@@ -27,3 +27,9 @@ export interface UpdateMilestoneDTO {
   due_date?: Date;
   status?: MilestoneStatus;
 }
+
+export interface MilestoneWithProject extends Milestone {
+  student_id: number;
+  advisor_id: number | null;
+  project_title: string;
+}

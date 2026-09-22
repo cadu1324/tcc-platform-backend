@@ -6,6 +6,7 @@ import deliveryRoutes from './deliveryRoutes';
 import milestoneRoutes from './milestoneRoutes';
 import feedbackRoutes from './feedbackRoutes';
 import notificationRoutes from './notificationRoutes';
+import notificationSettingsRoutes from './notificationSettingsRoutes';
 import dashboardRoutes from './dashboardRoutes';
 import messageRoutes from './messageRoutes';
 
@@ -18,6 +19,7 @@ router.use('/deliveries', deliveryRoutes);
 router.use('/milestones', milestoneRoutes);
 router.use('/feedbacks', feedbackRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/notification-settings', notificationSettingsRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/messages', messageRoutes);
 

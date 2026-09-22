@@ -3,6 +3,7 @@ import { feedbackRepository } from '../repositories/feedbackRepository';
 import { deliveryRepository } from '../repositories/deliveryRepository';
 import { projectRepository } from '../repositories/projectRepository';
 import { notificationService } from './notificationService';
+import { notificationSettingsService } from './notificationSettingsService';
 import { NotificationType } from '../types/notification.types';
 import { AppError } from '../middlewares/errorHandler';
 
@@ -40,12 +41,15 @@ export const feedbackService = {
 
     const feedback = await feedbackRepository.create(data);
 
-    await notificationService.create({
-      user_id: project.student_id,
-      type: NotificationType.FEEDBACK_REGISTERED,
-      message: `New feedback was registered on delivery "${delivery.title}"`,
-      project_id: project.id
-    });
+    const settings = await notificationSettingsService.get();
+    if (settings.notify_student_on_feedback) {
+      await notificationService.create({
+        user_id: project.student_id,
+        type: NotificationType.FEEDBACK_REGISTERED,
+        message: `New feedback was registered on delivery "${delivery.title}"`,
+        project_id: project.id
+      });
+    }
 
     return feedback;
   }

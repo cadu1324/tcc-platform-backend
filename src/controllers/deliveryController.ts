@@ -96,5 +96,36 @@ export const deliveryController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async getVersions(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const versions = await deliveryFileService.getVersionsForUser({
+        deliveryId: Number(req.params.id),
+        userId: req.user!.id,
+        userType: req.user!.user_type
+      });
+      res.status(200).json({ success: true, data: versions });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async downloadVersionFile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const file = await deliveryFileService.getVersionFileForUser({
+        deliveryId: Number(req.params.id),
+        versionId: Number(req.params.versionId),
+        userId: req.user!.id,
+        userType: req.user!.user_type
+      });
+
+      res.setHeader('Content-Type', file.mime_type);
+      res.setHeader('Content-Length', file.size_bytes);
+      res.setHeader('Content-Disposition', attachmentDisposition(file.file_name));
+      res.send(file.content);
+    } catch (error) {
+      next(error);
+    }
   }
 };

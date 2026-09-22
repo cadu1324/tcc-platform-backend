@@ -41,6 +41,15 @@ export const userRepository = {
     );
   },
 
+  async findAdmins(): Promise<UserResponse[]> {
+    return query<UserResponse>(
+      `SELECT id, name, email, user_type, is_active, created_at, updated_at FROM users
+       WHERE user_type = $1 AND is_active = true
+       ORDER BY name`,
+      [UserType.ADMIN]
+    );
+  },
+
   async update(id: number, data: UpdateUserDTO): Promise<UserResponse | null> {
     const fields: string[] = [];
     const values: unknown[] = [];

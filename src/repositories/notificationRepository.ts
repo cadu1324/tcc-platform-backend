@@ -49,5 +49,21 @@ export const notificationRepository = {
       [userId, type]
     );
     return result!.has_unread;
+  },
+
+  async existsExact(
+    userId: number,
+    type: NotificationType,
+    projectId: number,
+    message: string
+  ): Promise<boolean> {
+    const result = await queryOne<{ exists: boolean }>(
+      `SELECT EXISTS(
+         SELECT 1 FROM notifications
+         WHERE user_id = $1 AND type = $2 AND project_id = $3 AND message = $4
+       ) AS exists`,
+      [userId, type, projectId, message]
+    );
+    return result!.exists;
   }
 };

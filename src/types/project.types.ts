@@ -23,6 +23,13 @@ export interface AdvisorProject extends Project {
   milestones_completed: number;
 }
 
+export interface AdminProject extends Project {
+  student_name: string;
+  advisor_name: string | null;
+  milestones_total: number;
+  milestones_completed: number;
+}
+
 export interface CreateProjectDTO {
   title: string;
   description: string;

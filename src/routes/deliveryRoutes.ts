@@ -17,6 +17,8 @@ router.use(authMiddleware);
 router.get('/', deliveryController.findAll);
 router.get('/:id', deliveryController.findById);
 router.get('/:id/file', deliveryController.downloadFile);
+router.get('/:id/versions', deliveryController.getVersions);
+router.get('/:id/versions/:versionId/file', deliveryController.downloadVersionFile);
 router.get('/project/:projectId', deliveryController.findByProjectId);
 router.post('/', validateRequest(createDeliverySchema), deliveryController.create);
 router.post('/:id/submission', upload.single('file'), deliveryController.submit);

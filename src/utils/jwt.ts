@@ -7,8 +7,8 @@ export interface TokenPayload {
   user_type: UserType;
 }
 
-export function generateToken(payload: TokenPayload): string {
-  return jwt.sign(payload, env.jwtSecret, { expiresIn: '24h' });
+export function generateAccessToken(payload: TokenPayload): string {
+  return jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtAccessExpiresIn });
 }
 
 export function verifyToken(token: string): TokenPayload | null {

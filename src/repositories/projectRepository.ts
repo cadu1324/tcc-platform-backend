@@ -2,6 +2,7 @@ import { query, queryOne } from '../config/database';
 import {
   Project,
   AdvisorProject,
+  AdminProject,
   CreateProjectDTO,
   UpdateProjectDTO,
   ProjectStatus
@@ -43,6 +44,22 @@ export const projectRepository = {
        GROUP BY p.id, u.name
        ORDER BY p.created_at DESC`,
       [advisorId]
+    );
+  },
+
+  async findAllWithStats(): Promise<AdminProject[]> {
+    return query<AdminProject>(
+      `SELECT p.*,
+              student.name AS student_name,
+              advisor.name AS advisor_name,
+              COUNT(m.id)::int AS milestones_total,
+              (COUNT(m.id) FILTER (WHERE m.status = 'completed'))::int AS milestones_completed
+       FROM projects p
+       JOIN users student ON student.id = p.student_id
+       LEFT JOIN users advisor ON advisor.id = p.advisor_id
+       LEFT JOIN milestones m ON m.project_id = p.id
+       GROUP BY p.id, student.name, advisor.name
+       ORDER BY p.created_at DESC`
     );
   },
 

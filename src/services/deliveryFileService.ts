@@ -2,14 +2,18 @@ import { Delivery, DeliveryStatus } from '../types/project.types';
 import type { Project } from '../types/project.types';
 import type {
   DeliveryFile,
+  DeliveryFileVersionStatus,
   SubmitDeliveryFileParams,
-  GetDeliveryFileParams
+  GetDeliveryFileParams,
+  GetDeliveryFileVersionsParams,
+  GetDeliveryFileVersionParams
 } from '../types/deliveryFile.types';
 import { UserType } from '../types/user.types';
 import { deliveryRepository } from '../repositories/deliveryRepository';
 import { deliveryFileRepository } from '../repositories/deliveryFileRepository';
 import { projectRepository } from '../repositories/projectRepository';
 import { notificationService } from './notificationService';
+import { notificationSettingsService } from './notificationSettingsService';
 import { NotificationType } from '../types/notification.types';
 import { resolveDeliveryMimeType } from '../utils/deliveryFileMime';
 import { env } from '../config/env';
@@ -27,6 +31,15 @@ async function loadDeliveryWithProject(deliveryId: number): Promise<{ delivery: 
   }
 
   return { delivery, project };
+}
+
+function assertCanAccessFile(project: Project, userId: number, userType: UserType): void {
+  const isOwnerStudent = userType === UserType.STUDENT && project.student_id === userId;
+  const isProjectAdvisor = userType === UserType.ADVISOR && project.advisor_id === userId;
+  const isAdmin = userType === UserType.ADMIN;
+  if (!isOwnerStudent && !isProjectAdvisor && !isAdmin) {
+    throw new AppError('You are not allowed to access this file', 403);
+  }
 }
 
 export const deliveryFileService = {
@@ -54,7 +67,7 @@ export const deliveryFileService = {
       throw new AppError('Delivery has already been submitted', 409);
     }
 
-    await deliveryFileRepository.upsert({
+    await deliveryFileRepository.create({
       delivery_id: deliveryId,
       file_name: file.originalname,
       mime_type: mimeType,
@@ -70,12 +83,15 @@ export const deliveryFileService = {
     });
 
     if (project.advisor_id) {
-      await notificationService.create({
-        user_id: project.advisor_id,
-        type: NotificationType.DELIVERY_CREATED,
-        message: `Delivery "${delivery.title}" was submitted for project "${project.title}"`,
-        project_id: project.id
-      });
+      const settings = await notificationSettingsService.get();
+      if (settings.notify_advisor_on_delivery_submitted) {
+        await notificationService.create({
+          user_id: project.advisor_id,
+          type: NotificationType.DELIVERY_CREATED,
+          message: `Delivery "${delivery.title}" was submitted for project "${project.title}"`,
+          project_id: project.id
+        });
+      }
     }
 
     return updated!;
@@ -83,17 +99,44 @@ export const deliveryFileService = {
 
   async getFileForUser({ deliveryId, userId, userType }: GetDeliveryFileParams): Promise<DeliveryFile> {
     const { project } = await loadDeliveryWithProject(deliveryId);
+    assertCanAccessFile(project, userId, userType);
 
-    const isOwnerStudent = userType === UserType.STUDENT && project.student_id === userId;
-    const isProjectAdvisor = userType === UserType.ADVISOR && project.advisor_id === userId;
-    const isAdmin = userType === UserType.ADMIN;
-    if (!isOwnerStudent && !isProjectAdvisor && !isAdmin) {
-      throw new AppError('You are not allowed to access this file', 403);
-    }
-
-    const file = await deliveryFileRepository.findByDeliveryId(deliveryId);
+    const file = await deliveryFileRepository.findLatestByDeliveryId(deliveryId);
     if (!file) {
       throw new AppError('No file found for this delivery', 404);
+    }
+
+    return file;
+  },
+
+  async getVersionsForUser({
+    deliveryId,
+    userId,
+    userType
+  }: GetDeliveryFileVersionsParams): Promise<DeliveryFileVersionStatus[]> {
+    const { delivery, project } = await loadDeliveryWithProject(deliveryId);
+    assertCanAccessFile(project, userId, userType);
+
+    const versions = await deliveryFileRepository.findVersionsByDeliveryId(deliveryId);
+
+    return versions.map((version, index) => ({
+      ...version,
+      status: index === 0 ? delivery.status : DeliveryStatus.REJECTED
+    }));
+  },
+
+  async getVersionFileForUser({
+    deliveryId,
+    versionId,
+    userId,
+    userType
+  }: GetDeliveryFileVersionParams): Promise<DeliveryFile> {
+    const { project } = await loadDeliveryWithProject(deliveryId);
+    assertCanAccessFile(project, userId, userType);
+
+    const file = await deliveryFileRepository.findVersionById(deliveryId, versionId);
+    if (!file) {
+      throw new AppError('Delivery file version not found', 404);
     }
 
     return file;

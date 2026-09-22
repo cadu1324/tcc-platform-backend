@@ -12,7 +12,7 @@ export const projectService = {
     if (requester.user_type === UserType.ADVISOR) {
       return projectRepository.findByAdvisorIdWithStats(requester.id);
     }
-    return projectRepository.findAll();
+    return projectRepository.findAllWithStats();
   },
 
   async findById(id: number, requester: Requester): Promise<Project> {
