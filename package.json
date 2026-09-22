@@ -7,7 +7,10 @@
     "dev": "nodemon --exec tsx src/server.ts",
     "build": "prisma generate && tsc",
     "start": "node dist/server.js",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:status": "prisma migrate status"
   },
   "keywords": [
     "tcc",
