@@ -1,5 +1,10 @@
 import { query, queryOne } from '../config/database';
-import { Delivery, CreateDeliveryDTO, UpdateDeliveryDTO } from '../types/project.types';
+import {
+  Delivery,
+  DeliveryWithMilestone,
+  CreateDeliveryDTO,
+  UpdateDeliveryDTO
+} from '../types/project.types';
 
 export const deliveryRepository = {
   async findAll(): Promise<Delivery[]> {
@@ -10,19 +15,23 @@ export const deliveryRepository = {
     return queryOne<Delivery>('SELECT * FROM deliveries WHERE id = $1', [id]);
   },
 
-  async findByProjectId(projectId: number): Promise<Delivery[]> {
-    return query<Delivery>(
-      'SELECT * FROM deliveries WHERE project_id = $1 ORDER BY created_at DESC',
+  async findByProjectId(projectId: number): Promise<DeliveryWithMilestone[]> {
+    return query<DeliveryWithMilestone>(
+      `SELECT d.*, m.title AS milestone_title
+       FROM deliveries d
+       LEFT JOIN milestones m ON m.id = d.milestone_id
+       WHERE d.project_id = $1
+       ORDER BY d.created_at DESC`,
       [projectId]
     );
   },
 
   async create(data: CreateDeliveryDTO): Promise<Delivery> {
     const result = await queryOne<Delivery>(
-      `INSERT INTO deliveries (project_id, title, description, deadline)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO deliveries (project_id, milestone_id, title, description, deadline)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [data.project_id, data.title, data.description, data.deadline ?? null]
+      [data.project_id, data.milestone_id, data.title, data.description, data.deadline ?? null]
     );
     return result!;
   },

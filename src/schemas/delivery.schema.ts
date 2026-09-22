@@ -3,6 +3,7 @@ import { DeliveryStatus } from '../types/project.types';
 
 export const createDeliverySchema = z.object({
   project_id: z.number().int().positive(),
+  milestone_id: z.number().int().positive('Milestone is required'),
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
   deadline: z.coerce.date().optional()

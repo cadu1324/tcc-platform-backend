@@ -72,14 +72,15 @@ export const projectRepository = {
 
   async create(data: CreateProjectDTO): Promise<Project> {
     const result = await queryOne<Project>(
-      `INSERT INTO projects (title, description, student_id, advisor_id, start_date, expected_delivery_date)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO projects (title, description, student_id, advisor_id, knowledge_area, start_date, expected_delivery_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
         data.title,
         data.description,
         data.student_id,
         data.advisor_id ?? null,
+        data.knowledge_area,
         data.start_date ?? null,
         data.expected_delivery_date ?? null
       ]
@@ -111,6 +112,10 @@ export const projectRepository = {
     if (data.expected_delivery_date !== undefined) {
       fields.push(`expected_delivery_date = $${paramIndex++}`);
       values.push(data.expected_delivery_date);
+    }
+    if (data.knowledge_area !== undefined) {
+      fields.push(`knowledge_area = $${paramIndex++}`);
+      values.push(data.knowledge_area);
     }
 
     if (fields.length === 0) return null;
