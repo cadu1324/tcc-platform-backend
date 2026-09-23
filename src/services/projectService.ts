@@ -2,6 +2,7 @@ import { Project, CreateProjectDTO, UpdateProjectDTO, ProjectStatus } from '../t
 import { UserType, Requester } from '../types/user.types';
 import { projectRepository } from '../repositories/projectRepository';
 import { userRepository } from '../repositories/userRepository';
+import { assertCanAccessProject } from '../utils/projectAccess';
 import { AppError } from '../middlewares/errorHandler';
 
 export const projectService = {
@@ -21,13 +22,7 @@ export const projectService = {
       throw new AppError('Project not found', 404);
     }
 
-    const canView =
-      requester.user_type === UserType.ADMIN ||
-      (requester.user_type === UserType.STUDENT && project.student_id === requester.id) ||
-      (requester.user_type === UserType.ADVISOR && project.advisor_id === requester.id);
-    if (!canView) {
-      throw new AppError('You are not allowed to view this project', 403);
-    }
+    assertCanAccessProject(project, requester);
 
     return project;
   },
@@ -76,11 +71,13 @@ export const projectService = {
     return projectRepository.create(payload);
   },
 
-  async update(id: number, data: UpdateProjectDTO): Promise<Project> {
+  async update(id: number, data: UpdateProjectDTO, requester: Requester): Promise<Project> {
     const existing = await projectRepository.findById(id);
     if (!existing) {
       throw new AppError('Project not found', 404);
     }
+
+    assertCanAccessProject(existing, requester);
 
     if (data.advisor_id) {
       const advisor = await userRepository.findById(data.advisor_id);
@@ -107,7 +104,11 @@ export const projectService = {
     return updated;
   },
 
-  async delete(id: number): Promise<void> {
+  async delete(id: number, requester: Requester): Promise<void> {
+    if (requester.user_type !== UserType.ADMIN) {
+      throw new AppError('Only an admin can delete a project', 403);
+    }
+
     const existing = await projectRepository.findById(id);
     if (!existing) {
       throw new AppError('Project not found', 404);

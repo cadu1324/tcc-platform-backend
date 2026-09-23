@@ -1,3 +1,5 @@
+import { DeliveryStatus } from './project.types';
+
 export interface Feedback {
   id: number;
   delivery_id: number;
@@ -12,4 +14,5 @@ export interface CreateFeedbackDTO {
   advisor_id: number;
   comment: string;
   grade: number;
+  status: typeof DeliveryStatus.APPROVED | typeof DeliveryStatus.REJECTED;
 }

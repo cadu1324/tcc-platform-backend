@@ -1,18 +1,28 @@
 import { Feedback, CreateFeedbackDTO } from '../types/feedback.types';
+import { Requester } from '../types/user.types';
+import { prisma } from '../config/prisma';
 import { feedbackRepository } from '../repositories/feedbackRepository';
 import { deliveryRepository } from '../repositories/deliveryRepository';
 import { projectRepository } from '../repositories/projectRepository';
 import { notificationService } from './notificationService';
 import { notificationSettingsService } from './notificationSettingsService';
 import { NotificationType } from '../types/notification.types';
+import { assertCanAccessProject } from '../utils/projectAccess';
 import { AppError } from '../middlewares/errorHandler';
 
 export const feedbackService = {
-  async findByDeliveryId(deliveryId: number): Promise<Feedback[]> {
+  async findByDeliveryId(deliveryId: number, requester: Requester): Promise<Feedback[]> {
     const delivery = await deliveryRepository.findById(deliveryId);
     if (!delivery) {
       throw new AppError('Delivery not found', 404);
     }
+
+    const project = await projectRepository.findById(delivery.project_id);
+    if (!project) {
+      throw new AppError('Project not found', 404);
+    }
+    assertCanAccessProject(project, requester);
+
     return feedbackRepository.findByDeliveryId(deliveryId);
   },
 
@@ -39,7 +49,11 @@ export const feedbackService = {
       throw new AppError('Only the project advisor can give feedback on this delivery', 403);
     }
 
-    const feedback = await feedbackRepository.create(data);
+    const feedback = await prisma.$transaction(async (tx) => {
+      const created = await feedbackRepository.create(data, tx);
+      await deliveryRepository.update(data.delivery_id, { status: data.status }, tx);
+      return created;
+    });
 
     const settings = await notificationSettingsService.get();
     if (settings.notify_student_on_feedback) {
