@@ -2,9 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { milestoneService } from '../services/milestoneService';
 
 export const milestoneController = {
-  async findAll(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  async findAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const milestones = await milestoneService.findAll();
+      const milestones = await milestoneService.findAll(req.user!);
       res.status(200).json({ success: true, data: milestones });
     } catch (error) {
       next(error);
@@ -13,7 +13,7 @@ export const milestoneController = {
 
   async findById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const milestone = await milestoneService.findById(Number(req.params.id));
+      const milestone = await milestoneService.findById(Number(req.params.id), req.user!);
       res.status(200).json({ success: true, data: milestone });
     } catch (error) {
       next(error);
@@ -22,7 +22,7 @@ export const milestoneController = {
 
   async findByProjectId(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const milestones = await milestoneService.findByProjectId(Number(req.params.projectId));
+      const milestones = await milestoneService.findByProjectId(Number(req.params.projectId), req.user!);
       res.status(200).json({ success: true, data: milestones });
     } catch (error) {
       next(error);

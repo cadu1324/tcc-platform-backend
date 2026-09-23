@@ -22,6 +22,8 @@ export interface CreateUserDTO {
   user_type: UserType;
 }
 
+export type RegisterDTO = Omit<CreateUserDTO, 'user_type'>;
+
 export interface UpdateUserDTO {
   name?: string;
   email?: string;

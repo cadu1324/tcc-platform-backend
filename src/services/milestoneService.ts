@@ -9,6 +9,8 @@ import {
   assertCanManageMilestone,
   assertCanUpdateMilestoneStatus
 } from '../utils/milestoneAccess';
+import { assertCanAccessProject } from '../utils/projectAccess';
+import { UserType } from '../types/user.types';
 import { AppError } from '../middlewares/errorHandler';
 
 async function notifyMilestoneChange(
@@ -33,23 +35,36 @@ async function notifyMilestoneChange(
 }
 
 export const milestoneService = {
-  async findAll(): Promise<Milestone[]> {
+  async findAll(requester: Requester): Promise<Milestone[]> {
+    if (requester.user_type !== UserType.ADMIN) {
+      throw new AppError('Only an admin can list all milestones', 403);
+    }
     return milestoneRepository.findAll();
   },
 
-  async findById(id: number): Promise<Milestone> {
+  async findById(id: number, requester: Requester): Promise<Milestone> {
     const milestone = await milestoneRepository.findById(id);
     if (!milestone) {
       throw new AppError('Milestone not found', 404);
     }
+
+    const project = await projectRepository.findById(milestone.project_id);
+    if (!project) {
+      throw new AppError('Project not found', 404);
+    }
+    assertCanAccessProject(project, requester);
+
     return milestone;
   },
 
-  async findByProjectId(projectId: number): Promise<Milestone[]> {
+  async findByProjectId(projectId: number, requester: Requester): Promise<Milestone[]> {
     const project = await projectRepository.findById(projectId);
     if (!project) {
       throw new AppError('Project not found', 404);
     }
+
+    assertCanAccessProject(project, requester);
+
     return milestoneRepository.findByProjectId(projectId);
   },
 

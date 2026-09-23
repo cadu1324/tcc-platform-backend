@@ -1,4 +1,4 @@
-import { CreateUserDTO, UserResponse, UserType } from '../types/user.types';
+import { RegisterDTO, UserResponse, UserType } from '../types/user.types';
 import type { ForgotPasswordDTO, ResetPasswordDTO } from '../types/passwordReset.types';
 import type { RefreshTokenDTO } from '../types/refreshToken.types';
 import { userRepository } from '../repositories/userRepository';
@@ -42,8 +42,8 @@ async function issueTokenPair(userId: number, userType: UserType): Promise<Refre
 }
 
 export const authService = {
-  async register(data: CreateUserDTO): Promise<AuthResponse> {
-    if (!data.name || !data.email || !data.password || !data.user_type) {
+  async register(data: RegisterDTO): Promise<AuthResponse> {
+    if (!data.name || !data.email || !data.password) {
       throw new AppError('All fields are required');
     }
 
@@ -57,7 +57,7 @@ export const authService = {
     }
 
     const passwordHash = await hashPassword(data.password);
-    const user = await userRepository.create(data.name, data.email, passwordHash, data.user_type);
+    const user = await userRepository.create(data.name, data.email, passwordHash, UserType.STUDENT);
     const tokens = await issueTokenPair(user.id, user.user_type);
 
     return { user, ...tokens };

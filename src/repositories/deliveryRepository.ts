@@ -1,5 +1,5 @@
 import { Prisma } from '../generated/prisma/client';
-import { prisma } from '../config/prisma';
+import { prisma, DbClient } from '../config/prisma';
 import {
   Delivery,
   DeliveryWithMilestone,
@@ -48,7 +48,7 @@ export const deliveryRepository = {
     return asDelivery(row);
   },
 
-  async update(id: number, data: UpdateDeliveryDTO): Promise<Delivery | null> {
+  async update(id: number, data: UpdateDeliveryDTO, client: DbClient = prisma): Promise<Delivery | null> {
     const updateData: Prisma.deliveriesUpdateInput = {};
 
     if (data.title !== undefined) updateData.title = data.title;
@@ -61,7 +61,7 @@ export const deliveryRepository = {
 
     if (Object.keys(updateData).length === 0) return null;
 
-    const row = await prisma.deliveries.update({ where: { id }, data: updateData });
+    const row = await client.deliveries.update({ where: { id }, data: updateData });
     return asDelivery(row);
   },
 

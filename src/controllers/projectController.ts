@@ -44,14 +44,11 @@ export const projectController = {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { title, description, advisor_id, status, expected_delivery_date, knowledge_area } = req.body;
-      const project = await projectService.update(Number(req.params.id), {
-        title,
-        description,
-        advisor_id,
-        status,
-        expected_delivery_date,
-        knowledge_area
-      });
+      const project = await projectService.update(
+        Number(req.params.id),
+        { title, description, advisor_id, status, expected_delivery_date, knowledge_area },
+        req.user!
+      );
       res.status(200).json({ success: true, data: project });
     } catch (error) {
       next(error);
@@ -60,7 +57,7 @@ export const projectController = {
 
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await projectService.delete(Number(req.params.id));
+      await projectService.delete(Number(req.params.id), req.user!);
       res.status(200).json({ success: true, data: { message: 'Project deleted successfully' } });
     } catch (error) {
       next(error);
