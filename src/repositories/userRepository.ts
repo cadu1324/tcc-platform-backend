@@ -1,106 +1,112 @@
-import { queryOne, query } from '../config/database';
+import { prisma } from '../config/prisma';
+import { Prisma } from '../generated/prisma/client';
 import { User, UserResponse, UpdateUserDTO, AdvisorOption, UserType } from '../types/user.types';
+
+function isRecordNotFound(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
+}
+
+/** Prisma's generated user_type_enum has the same string values as UserType, but is a distinct nominal type. */
+function asUser<T>(row: T): T & { user_type: UserType } {
+  return row as T & { user_type: UserType };
+}
+
+const userResponseSelect = {
+  id: true,
+  name: true,
+  email: true,
+  user_type: true,
+  is_active: true,
+  created_at: true,
+  updated_at: true
+} as const;
 
 export const userRepository = {
   async findByEmail(email: string): Promise<User | null> {
-    return queryOne<User>(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
-    );
+    const user = await prisma.users.findUnique({ where: { email } });
+    return user && asUser(user);
   },
 
   async findById(id: number): Promise<User | null> {
-    return queryOne<User>(
-      'SELECT * FROM users WHERE id = $1',
-      [id]
-    );
+    const user = await prisma.users.findUnique({ where: { id } });
+    return user && asUser(user);
   },
 
   async create(name: string, email: string, passwordHash: string, userType: string): Promise<UserResponse> {
-    const result = await queryOne<UserResponse>(
-      `INSERT INTO users (name, email, password_hash, user_type)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, email, user_type, is_active, created_at, updated_at`,
-      [name, email, passwordHash, userType]
-    );
-    return result!;
+    const user = await prisma.users.create({
+      data: { name, email, password_hash: passwordHash, user_type: userType as UserType },
+      select: userResponseSelect
+    });
+    return asUser(user);
   },
 
   async findAll(): Promise<UserResponse[]> {
-    return query<UserResponse>(
-      'SELECT id, name, email, user_type, is_active, created_at, updated_at FROM users ORDER BY created_at DESC'
-    );
+    const users = await prisma.users.findMany({
+      select: userResponseSelect,
+      orderBy: { created_at: 'desc' }
+    });
+    return users.map(asUser);
   },
 
   async findAdvisors(): Promise<AdvisorOption[]> {
-    return query<AdvisorOption>(
-      `SELECT id, name FROM users
-       WHERE user_type = $1 AND is_active = true
-       ORDER BY name`,
-      [UserType.ADVISOR]
-    );
+    return prisma.users.findMany({
+      where: { user_type: UserType.ADVISOR, is_active: true },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
+    });
   },
 
   async findAdmins(): Promise<UserResponse[]> {
-    return query<UserResponse>(
-      `SELECT id, name, email, user_type, is_active, created_at, updated_at FROM users
-       WHERE user_type = $1 AND is_active = true
-       ORDER BY name`,
-      [UserType.ADMIN]
-    );
+    const admins = await prisma.users.findMany({
+      where: { user_type: UserType.ADMIN, is_active: true },
+      select: userResponseSelect,
+      orderBy: { name: 'asc' }
+    });
+    return admins.map(asUser);
   },
 
   async update(id: number, data: UpdateUserDTO): Promise<UserResponse | null> {
-    const fields: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
+    const updateData: {
+      name?: string;
+      email?: string;
+      password_hash?: string;
+      user_type?: UserType;
+      is_active?: boolean;
+    } = {};
 
-    if (data.name) {
-      fields.push(`name = $${paramIndex++}`);
-      values.push(data.name);
-    }
-    if (data.email) {
-      fields.push(`email = $${paramIndex++}`);
-      values.push(data.email);
-    }
-    if (data.password) {
-      fields.push(`password_hash = $${paramIndex++}`);
-      values.push(data.password);
-    }
-    if (data.user_type) {
-      fields.push(`user_type = $${paramIndex++}`);
-      values.push(data.user_type);
-    }
-    if (data.is_active !== undefined) {
-      fields.push(`is_active = $${paramIndex++}`);
-      values.push(data.is_active);
-    }
+    if (data.name) updateData.name = data.name;
+    if (data.email) updateData.email = data.email;
+    if (data.password) updateData.password_hash = data.password;
+    if (data.user_type) updateData.user_type = data.user_type;
+    if (data.is_active !== undefined) updateData.is_active = data.is_active;
 
-    if (fields.length === 0) return null;
+    if (Object.keys(updateData).length === 0) return null;
 
-    fields.push(`updated_at = NOW()`);
-    values.push(id);
-
-    return queryOne<UserResponse>(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex}
-       RETURNING id, name, email, user_type, is_active, created_at, updated_at`,
-      values
-    );
+    const updated = await prisma.users.update({
+      where: { id },
+      data: updateData,
+      select: userResponseSelect
+    });
+    return asUser(updated);
   },
 
   async updatePassword(id: number, passwordHash: string): Promise<void> {
-    await query(
-      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
-      [passwordHash, id]
-    );
+    await prisma.users.update({
+      where: { id },
+      data: { password_hash: passwordHash }
+    });
   },
 
   async deactivate(id: number): Promise<boolean> {
-    const result = await queryOne<UserResponse>(
-      `UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1
-       RETURNING id`,
-      [id]
-    );
-    return !!result;
+    try {
+      await prisma.users.update({
+        where: { id },
+        data: { is_active: false }
+      });
+      return true;
+    } catch (error) {
+      if (isRecordNotFound(error)) return false;
+      throw error;
+    }
   }
 };

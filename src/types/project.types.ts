@@ -13,6 +13,7 @@ export interface Project {
   expected_delivery_date: Date | null;
   student_id: number;
   advisor_id: number | null;
+  knowledge_area: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -35,6 +36,7 @@ export interface CreateProjectDTO {
   description: string;
   student_id: number;
   advisor_id: number;
+  knowledge_area: string;
   start_date?: Date;
   expected_delivery_date?: Date;
 }
@@ -45,6 +47,7 @@ export interface UpdateProjectDTO {
   advisor_id?: number;
   status?: ProjectStatus;
   expected_delivery_date?: Date;
+  knowledge_area?: string;
 }
 
 export enum DeliveryStatus {
@@ -57,6 +60,7 @@ export enum DeliveryStatus {
 export interface Delivery {
   id: number;
   project_id: number;
+  milestone_id: number | null;
   title: string;
   description: string;
   deadline: Date | null;
@@ -68,8 +72,13 @@ export interface Delivery {
   updated_at: Date;
 }
 
+export interface DeliveryWithMilestone extends Delivery {
+  milestone_title: string | null;
+}
+
 export interface CreateDeliveryDTO {
   project_id: number;
+  milestone_id: number;
   title: string;
   description: string;
   deadline?: Date;

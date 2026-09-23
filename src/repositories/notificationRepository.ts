@@ -1,54 +1,54 @@
-import { query, queryOne } from '../config/database';
+import { prisma } from '../config/prisma';
 import { Notification, CreateNotificationDTO, NotificationType } from '../types/notification.types';
+
+/** Prisma's generated notification_type_enum has the same string values as NotificationType, but is a distinct nominal type. */
+function asNotification<T>(row: T): T & { type: NotificationType } {
+  return row as T & { type: NotificationType };
+}
 
 export const notificationRepository = {
   async findByUserId(userId: number): Promise<Notification[]> {
-    return query<Notification>(
-      'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC',
-      [userId]
-    );
+    const rows = await prisma.notifications.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: 'desc' }
+    });
+    return rows.map(asNotification);
   },
 
   async findById(id: number): Promise<Notification | null> {
-    return queryOne<Notification>('SELECT * FROM notifications WHERE id = $1', [id]);
+    const row = await prisma.notifications.findUnique({ where: { id } });
+    return row && asNotification(row);
   },
 
   async create(data: CreateNotificationDTO): Promise<Notification> {
-    const result = await queryOne<Notification>(
-      `INSERT INTO notifications (user_id, type, message, project_id)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [data.user_id, data.type, data.message, data.project_id ?? null]
-    );
-    return result!;
+    const row = await prisma.notifications.create({
+      data: {
+        user_id: data.user_id,
+        type: data.type,
+        message: data.message,
+        project_id: data.project_id ?? null
+      }
+    });
+    return asNotification(row);
   },
 
   async markAsRead(id: number): Promise<Notification | null> {
-    return queryOne<Notification>(
-      `UPDATE notifications SET is_read = TRUE, updated_at = NOW()
-       WHERE id = $1
-       RETURNING *`,
-      [id]
-    );
+    const row = await prisma.notifications.update({
+      where: { id },
+      data: { is_read: true }
+    });
+    return row && asNotification(row);
   },
 
   async countUnreadByUserId(userId: number): Promise<number> {
-    const result = await queryOne<{ count: number }>(
-      `SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1 AND is_read = FALSE`,
-      [userId]
-    );
-    return result!.count;
+    return prisma.notifications.count({ where: { user_id: userId, is_read: false } });
   },
 
   async hasUnreadOfType(userId: number, type: NotificationType): Promise<boolean> {
-    const result = await queryOne<{ has_unread: boolean }>(
-      `SELECT EXISTS(
-         SELECT 1 FROM notifications
-         WHERE user_id = $1 AND type = $2 AND is_read = FALSE
-       ) AS has_unread`,
-      [userId, type]
-    );
-    return result!.has_unread;
+    const count = await prisma.notifications.count({
+      where: { user_id: userId, type, is_read: false }
+    });
+    return count > 0;
   },
 
   async existsExact(
@@ -57,13 +57,9 @@ export const notificationRepository = {
     projectId: number,
     message: string
   ): Promise<boolean> {
-    const result = await queryOne<{ exists: boolean }>(
-      `SELECT EXISTS(
-         SELECT 1 FROM notifications
-         WHERE user_id = $1 AND type = $2 AND project_id = $3 AND message = $4
-       ) AS exists`,
-      [userId, type, projectId, message]
-    );
-    return result!.exists;
+    const count = await prisma.notifications.count({
+      where: { user_id: userId, type, project_id: projectId, message }
+    });
+    return count > 0;
   }
 };

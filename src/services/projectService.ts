@@ -45,8 +45,14 @@ export const projectService = {
     const studentId = requester.user_type === UserType.STUDENT ? requester.id : data.student_id;
     const payload = { ...data, student_id: studentId };
 
-    if (!payload.title || !payload.description || !payload.student_id || !payload.advisor_id) {
-      throw new AppError('Title, description, student id and advisor id are required');
+    if (
+      !payload.title ||
+      !payload.description ||
+      !payload.student_id ||
+      !payload.advisor_id ||
+      !payload.knowledge_area
+    ) {
+      throw new AppError('Title, description, student id, advisor id and knowledge area are required');
     }
 
     const student = await userRepository.findById(payload.student_id);

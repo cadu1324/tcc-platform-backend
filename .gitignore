@@ -33,3 +33,4 @@ temp/
 
 # Claude 
 CLAUDE.md
+/src/generated/prisma

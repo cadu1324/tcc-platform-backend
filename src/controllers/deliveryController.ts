@@ -33,8 +33,8 @@ export const deliveryController = {
 
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { project_id, title, description, deadline } = req.body;
-      const delivery = await deliveryService.create({ project_id, title, description, deadline });
+      const { project_id, milestone_id, title, description, deadline } = req.body;
+      const delivery = await deliveryService.create({ project_id, milestone_id, title, description, deadline });
       res.status(201).json({ success: true, data: delivery });
     } catch (error) {
       next(error);

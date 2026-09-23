@@ -22,9 +22,17 @@ export const projectController = {
 
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { title, description, student_id, advisor_id, start_date, expected_delivery_date } = req.body;
+      const {
+        title,
+        description,
+        student_id,
+        advisor_id,
+        knowledge_area,
+        start_date,
+        expected_delivery_date
+      } = req.body;
       const project = await projectService.create(
-        { title, description, student_id, advisor_id, start_date, expected_delivery_date },
+        { title, description, student_id, advisor_id, knowledge_area, start_date, expected_delivery_date },
         req.user!
       );
       res.status(201).json({ success: true, data: project });
@@ -35,13 +43,14 @@ export const projectController = {
 
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { title, description, advisor_id, status, expected_delivery_date } = req.body;
+      const { title, description, advisor_id, status, expected_delivery_date, knowledge_area } = req.body;
       const project = await projectService.update(Number(req.params.id), {
         title,
         description,
         advisor_id,
         status,
-        expected_delivery_date
+        expected_delivery_date,
+        knowledge_area
       });
       res.status(200).json({ success: true, data: project });
     } catch (error) {

@@ -1,28 +1,27 @@
-import { query, queryOne } from '../config/database';
+import { prisma } from '../config/prisma';
 import type { PasswordResetToken } from '../types/passwordReset.types';
 
 export const passwordResetRepository = {
   async create(userId: number, tokenHash: string, expiresAt: Date): Promise<void> {
-    await query(
-      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
-       VALUES ($1, $2, $3)`,
-      [userId, tokenHash, expiresAt]
-    );
+    await prisma.password_reset_tokens.create({
+      data: { user_id: userId, token_hash: tokenHash, expires_at: expiresAt }
+    });
   },
 
   async findValidByHash(tokenHash: string): Promise<PasswordResetToken | null> {
-    return queryOne<PasswordResetToken>(
-      `SELECT * FROM password_reset_tokens
-       WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW()`,
-      [tokenHash]
-    );
+    return prisma.password_reset_tokens.findFirst({
+      where: { token_hash: tokenHash, used_at: null, expires_at: { gt: new Date() } }
+    });
   },
 
   async markUsed(id: number): Promise<void> {
-    await query('UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1', [id]);
+    await prisma.password_reset_tokens.update({
+      where: { id },
+      data: { used_at: new Date() }
+    });
   },
 
   async deleteByUserId(userId: number): Promise<void> {
-    await query('DELETE FROM password_reset_tokens WHERE user_id = $1', [userId]);
+    await prisma.password_reset_tokens.deleteMany({ where: { user_id: userId } });
   }
 };

@@ -1,12 +1,13 @@
 import cron from 'node-cron';
 import app from './app';
 import { env } from './config/env';
-import { testConnection } from './config/database';
+import { prisma } from './config/prisma';
 import { checkMilestoneDeadlines } from './services/milestoneNotificationJob';
 
 async function start() {
   try {
-    await testConnection();
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('Database connected successfully');
 
     app.listen(env.port, () => {
       console.log(`Server running on http://localhost:${env.port}`);

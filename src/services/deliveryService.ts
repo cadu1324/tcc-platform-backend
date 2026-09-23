@@ -1,6 +1,7 @@
-import { Delivery, CreateDeliveryDTO, UpdateDeliveryDTO } from '../types/project.types';
+import { Delivery, DeliveryWithMilestone, CreateDeliveryDTO, UpdateDeliveryDTO } from '../types/project.types';
 import { deliveryRepository } from '../repositories/deliveryRepository';
 import { projectRepository } from '../repositories/projectRepository';
+import { milestoneRepository } from '../repositories/milestoneRepository';
 import { notificationService } from './notificationService';
 import { NotificationType } from '../types/notification.types';
 import { AppError } from '../middlewares/errorHandler';
@@ -18,7 +19,7 @@ export const deliveryService = {
     return delivery;
   },
 
-  async findByProjectId(projectId: number): Promise<Delivery[]> {
+  async findByProjectId(projectId: number): Promise<DeliveryWithMilestone[]> {
     const project = await projectRepository.findById(projectId);
     if (!project) {
       throw new AppError('Project not found', 404);
@@ -27,13 +28,18 @@ export const deliveryService = {
   },
 
   async create(data: CreateDeliveryDTO): Promise<Delivery> {
-    if (!data.project_id || !data.title || !data.description) {
-      throw new AppError('Project id, title and description are required');
+    if (!data.project_id || !data.milestone_id || !data.title || !data.description) {
+      throw new AppError('Project id, milestone id, title and description are required');
     }
 
     const project = await projectRepository.findById(data.project_id);
     if (!project) {
       throw new AppError('Project not found', 404);
+    }
+
+    const milestone = await milestoneRepository.findById(data.milestone_id);
+    if (!milestone || milestone.project_id !== data.project_id) {
+      throw new AppError('Milestone does not belong to this project', 400);
     }
 
     const delivery = await deliveryRepository.create(data);
