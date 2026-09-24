@@ -59,7 +59,7 @@ export const deliveryService = {
       throw new AppError('Milestone does not belong to this project', 400);
     }
 
-    const delivery = await deliveryRepository.create(data);
+    const delivery = await deliveryRepository.create({ ...data, deadline: milestone.due_date ?? undefined });
 
     if (project.advisor_id) {
       await notificationService.create({
