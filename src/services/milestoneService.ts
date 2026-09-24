@@ -5,10 +5,7 @@ import { milestoneRepository } from '../repositories/milestoneRepository';
 import { projectRepository } from '../repositories/projectRepository';
 import { notificationService } from './notificationService';
 import { NotificationType } from '../types/notification.types';
-import {
-  assertCanManageMilestone,
-  assertCanUpdateMilestoneStatus
-} from '../utils/milestoneAccess';
+import { assertCanManageMilestone } from '../utils/milestoneAccess';
 import { assertCanAccessProject } from '../utils/projectAccess';
 import { UserType } from '../types/user.types';
 import { AppError } from '../middlewares/errorHandler';
@@ -102,13 +99,7 @@ export const milestoneService = {
       throw new AppError('Project not found', 404);
     }
 
-    const changesContent =
-      data.title !== undefined || data.description !== undefined || data.due_date !== undefined;
-    if (changesContent) {
-      assertCanManageMilestone(project, requester);
-    } else {
-      assertCanUpdateMilestoneStatus(project, requester);
-    }
+    assertCanManageMilestone(project, requester);
 
     const updated = await milestoneRepository.update(id, data);
     if (!updated) {
