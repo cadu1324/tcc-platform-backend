@@ -5,6 +5,7 @@ import { projectRepository } from '../repositories/projectRepository';
 import { milestoneRepository } from '../repositories/milestoneRepository';
 import { notificationService } from './notificationService';
 import { NotificationType } from '../types/notification.types';
+import { MilestoneStatus } from '../types/milestone.types';
 import { assertCanAccessProject } from '../utils/projectAccess';
 import { AppError } from '../middlewares/errorHandler';
 
@@ -57,6 +58,10 @@ export const deliveryService = {
     const milestone = await milestoneRepository.findById(data.milestone_id);
     if (!milestone || milestone.project_id !== data.project_id) {
       throw new AppError('Milestone does not belong to this project', 400);
+    }
+
+    if (milestone.status === MilestoneStatus.COMPLETED) {
+      throw new AppError('Cannot create a delivery for a completed milestone', 400);
     }
 
     const delivery = await deliveryRepository.create({ ...data, deadline: milestone.due_date ?? undefined });
